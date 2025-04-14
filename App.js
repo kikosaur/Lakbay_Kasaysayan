@@ -5,7 +5,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
-import { UserProvider } from './contexts/UserContext';
+import { UserProvider } from './contexts/UserContext';[]
 import * as THREE from 'three';
 import * as ExpoThree from 'expo-three';
 
