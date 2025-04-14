@@ -32,7 +32,7 @@ export default function App() {
           <PaperProvider>
             <NavigationContainer>
               <StatusBar style="auto" />
-              <Stack.Navigator initialRouteName="Login">
+              <Stack.Navigator initialRouteName="Home">
                 <Stack.Screen 
                   name="Login" 
                   component={LoginScreen} 
