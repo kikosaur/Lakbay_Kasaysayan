@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // 👈 Added useEffect
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, TextInput, Button, Surface } from 'react-native-paper';
 import { useUser } from '../contexts/UserContext';
 
-const LoginScreen = () => {
+const LoginScreen = ({ navigation }) => {
   const { login, register } = useUser();
   const [isRegistering, setIsRegistering] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,6 +24,13 @@ const LoginScreen = () => {
       } else {
         await login(formData.email, formData.password);
       }
+
+      // 👇 Navigate to Home after successful login/register
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -32,10 +39,24 @@ const LoginScreen = () => {
   const handleBypass = async () => {
     try {
       await login('kairuciriaca@gmail.com', 'ciriaca');
+
+      // 👇 Navigate to Home after bypass login
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+
     } catch (error) {
       Alert.alert('Error', 'Failed to bypass login');
     }
   };
+
+  // 👇 Auto-login on dev mode
+  useEffect(() => {
+    if (__DEV__) {
+      handleBypass();
+    }
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
@@ -142,4 +163,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen; 
+export default LoginScreen;

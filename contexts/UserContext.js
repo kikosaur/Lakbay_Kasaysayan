@@ -1,6 +1,14 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  updateProfile as firebaseUpdateProfile,
+  onAuthStateChanged,
+  signOut
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../utils/firebaseConfig';
 
 const UserContext = createContext();
 
@@ -10,69 +18,87 @@ export const UserProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        const response = await axios.get('http://localhost:5006/auth/me');
-        setUser(response.data);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get additional user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              ...userDoc.data()
+            });
+          } else {
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName
+            });
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName
+          });
+        }
+      } else {
+        setUser(null);
       }
-    } catch (error) {
-      console.error('Error loading user:', error);
-      await AsyncStorage.removeItem('token');
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5006/auth/login', {
-        email,
-        password
-      });
-      
-      const { token, user } = response.data;
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Store user token for compatibility with your existing code
+      const token = await userCredential.user.getIdToken();
       await AsyncStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
       setError(null);
-      return user;
+      return userCredential.user;
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      setError(error.message);
       throw error;
     }
   };
 
   const register = async (username, email, password) => {
     try {
-      const response = await axios.post('http://localhost:5006/auth/register', {
-        username,
-        email,
-        password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update profile with username
+      await firebaseUpdateProfile(userCredential.user, {
+        displayName: username
       });
       
-      const { token, user } = response.data;
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        username,
+        email,
+        createdAt: new Date()
+      });
+      
+      // Store user token for compatibility with your existing code
+      const token = await userCredential.user.getIdToken();
       await AsyncStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
       setError(null);
-      return user;
+      return userCredential.user;
     } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed');
+      setError(error.message);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
+      await signOut(auth);
       await AsyncStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-      setUser(null);
       setError(null);
     } catch (error) {
       console.error('Error logging out:', error);
@@ -81,12 +107,31 @@ export const UserProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
-      const response = await axios.put('http://localhost:5006/auth/me', updates);
-      setUser(response.data);
+      if (!user) throw new Error('User not authenticated');
+      
+      // Update in Firestore
+      await updateDoc(doc(db, 'users', user.uid), updates);
+      
+      // If updating displayName, also update in Firebase Auth
+      if (updates.username) {
+        await firebaseUpdateProfile(auth.currentUser, {
+          displayName: updates.username
+        });
+      }
+      
+      // Refresh user data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const updatedUser = {
+        ...user,
+        ...userDoc.data(),
+        displayName: updates.username || user.displayName
+      };
+      
+      setUser(updatedUser);
       setError(null);
-      return response.data;
+      return updatedUser;
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to update profile');
+      setError(error.message);
       throw error;
     }
   };
@@ -114,4 +159,4 @@ export const useUser = () => {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;
-}; 
+};

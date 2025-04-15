@@ -7,15 +7,12 @@ const firebaseConfig = {
   apiKey: "AIzaSyDmzoHJJKVasEZANLihvK_qsBIczs94m3k",
   authDomain: "lakbay-kasaysayan.firebaseapp.com",
   projectId: "lakbay-kasaysayan",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "SENDER_ID",
+  storageBucket: "lakbay-kasaysayan.appspot.com",
+  messagingSenderId: "848089650873",
   appId: "1:848089650873:android:6933988b2738aa7c2b6d68"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Export services
 const auth = getAuth(app);
 const db = getFirestore(app);
 

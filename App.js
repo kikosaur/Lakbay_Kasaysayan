@@ -14,7 +14,7 @@ import * as ExpoThree from 'expo-three';
 import LoginScreen from './screens/LoginScreen';
 import HomeTab from './screens/HomeTab';
 import ARScreen from './screens/ARScreen';
-import AchievementHall from './screens/AchievementHall';
+import AchievementHallScreen from './screens/AchievementHallScreen';
 import RunTracking from './screens/RunScreen';
 import ProfileScreen from './screens/Profile';
 
@@ -32,7 +32,7 @@ export default function App() {
           <PaperProvider>
             <NavigationContainer>
               <StatusBar style="auto" />
-              <Stack.Navigator initialRouteName="Home">
+              <Stack.Navigator initialRouteName="Login">
                 <Stack.Screen 
                   name="Login" 
                   component={LoginScreen} 
@@ -49,8 +49,8 @@ export default function App() {
                   options={{ headerShown: false }}
                 />
                 <Stack.Screen 
-                  name="AchievementHall" 
-                  component={AchievementHall} 
+                  name="AchievementHallScreen" 
+                  component={AchievementHallScreen} 
                   options={{ headerShown: false }}
                 />
                 <Stack.Screen 
